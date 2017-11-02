@@ -1,0 +1,32 @@
+version: '2'
+services:
+  draft:
+    build: draft
+    image: my/service-management-api-draft
+    ports:
+      - "1111:1111"
+    volumes:
+      - ./draft/api:/opt/draft/api
+    command: ["start","-m"]
+
+  redoc:
+    build: redoc
+    image: my/service-management-api-redoc
+    ports:
+      - "8888:80"
+    volumes:
+      - ./draft/api/swagger/swagger.yaml:/usr/share/nginx/html/spec/swagger.yaml
+    depends_on:
+      - draft
+
+  swagger-ui:
+    image: swaggerapi/swagger-ui
+    ports:
+      - "8080:8080"
+    environment:
+      - SWAGGER_JSON=/opt/swagger.yaml
+    volumes:
+      - ./draft/api/swagger:/opt
+    depends_on:
+      - draft
+

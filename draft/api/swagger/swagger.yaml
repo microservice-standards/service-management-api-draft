@@ -1,0 +1,1812 @@
+swagger: "2.0"
+
+info:
+  version: "1.0.0"
+  title: Service Management API
+  description: |
+    Service Management API spec.
+    [API Console](http://localhost:8080)
+    [API ReDoc](http://localhost:8888)
+
+externalDocs: 
+  description: |
+    **More** information about the Service Management API
+  url: https://github.com/microservice-standards/service-management-api-draft
+
+schemes:
+  - http
+  - https
+host: localhost:1111 
+basePath: /.service
+
+consumes:
+  - application/json
+produces:
+  - application/json
+
+tags:
+  - name: required_api
+    description: API endpoints that must be implemented
+  - name: highly_recommended_api
+    description: Soon to be required API endpoints
+  - name: recommended_api
+    description: API endpoints that should be implemented
+  - name: optional_api
+    description: Nice to have API endpoints
+  - name: future_api
+    description: API endpoints that will be useful in the future
+
+paths:
+  /spec:
+    x-swagger-pipe: swagger_raw
+    get:
+      summary: API spec
+      description: OpenAPI spec for the Service Management API
+      tags:
+        - required_api
+        - spec
+      responses:
+        200:
+          description: JSON data
+  /spec/implemented:
+    x-swagger-router-controller: spec
+    get:
+      summary: Implemented endpoints
+      description: Returns implemented Service Management API endpoint routes
+      operationId: specImplemented
+      tags:
+        - recommended_api
+        - spec
+      responses:
+        200:
+          description: Success.
+          schema:
+            type: array
+            items:
+              required:
+                - route
+              properties:
+                route:
+                  type: string
+                methods:
+                  type: array
+                  items:
+                    type: string
+  /info:
+    x-swagger-router-controller: info
+    get:
+      summary: Service info
+      description: Returns service information
+      operationId: serviceInfo
+      tags:
+        - required_api
+        - info
+      responses:
+        200:
+          description: Service information
+          schema:
+            $ref: "#/definitions/Service"
+  /info/version/api:
+    x-swagger-router-controller: info
+    get:
+      summary: Current Service Domain API version
+      description: Version information for the current Service Domain API
+      operationId: apiCurrentVersionInfo
+      tags:
+        - recommended_api
+        - info
+        - version
+      responses:
+        200:
+          description: Current version
+          schema:
+            $ref: "#/definitions/ApiVersion"
+  /info/version/api/all:
+    x-swagger-router-controller: info
+    get:
+      summary: All Service Domain API versions
+      description: All Service Domain API versions supported by the service
+      operationId: apiAllVersionsInfo
+      tags:
+        - recommended_api
+        - info
+        - version
+      responses:
+        200:
+          description: All supported version
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/ApiVersion"
+  /info/version/build:
+    x-swagger-router-controller: info
+    get:
+      summary: Build version
+      description: Software build information
+      operationId: buildVersionInfo
+      tags:
+        - required_api
+        - info
+        - version
+      responses:
+        200:
+          description: Build version info
+          schema:
+            $ref: "#/definitions/BuildVersion"
+  /lifecycle/control:
+    x-swagger-router-controller: lifecycle
+    post:
+      consumes:
+        - application/octet-stream
+        - application/json
+      summary: Service lifecycle manager
+      description: The management interface to execute the service lifecycle commands
+      operationId: submitCommand
+      tags:
+        - required_api
+        - lifecycle
+      parameters:
+        - in: query
+          required: true
+          name: action
+          type: string
+          enum:
+            - shutdown
+            - terminate
+            - restart
+            - pause
+            - resume
+            - reload.config
+            - revert.config
+            - drain.all
+            - drain.tasks
+            - drain.requests
+            - none
+          description: Service lifecycle action to execute >
+            * shutdown - (required) graceful service termination (drain work and exit)
+            * terminate - (required) exit immediately (without draining any work)
+            * restart - restart service asap
+            * pause - stop accepting new work and suspend WIP
+            * resume - resume WIP and start accepting new work (can use resume after drain or pause commands)
+            * reload.config - (required) reload service configuration
+            * revert.config - roll back to previous configuration
+            * drain.all - (recommended) stop accepting new work and drain all active tasks and requests
+            * drain.tasks - stop accepting new tasks and drain all active tasks
+            * drain.requests - stop accepting new requests and drain all active ingress requests
+            * none - no command
+        - name: wait
+          in: query
+          description: Number of seconds to wait for the lifecycle control action to complete before the call returns (no value defaults to a 30 second wait)
+          type: integer
+          format: int32
+          minimum: 0
+          default: 0
+          allowEmptyValue: true
+        - name: deadline
+          in: query
+          description: The maximum number of seconds for the lifecycle control action to complete before the action-specific default behavior is triggered (e.g., terminate service if the graceful shutdown is taking too long to complete). 0 means no deadline.
+          type: integer
+          format: int32
+          minimum: 0
+          default: 0
+        - name: expire
+          in: query
+          description: The maximum number of seconds before the submitted action expires (allowed wait time before action starts executing)
+          type: integer
+          format: int32
+          minimum: 0
+          default: 0
+        - name: force
+          in: query
+          description: Force the lifecycle control action execution (cancel other pending action if necessary)
+          type: boolean
+          default: false
+          allowEmptyValue: true
+        - name: return_state
+          in: query
+          description: Add the current lifecycle state to the response
+          type: boolean
+          default: false
+          allowEmptyValue: true
+      responses:
+        200:
+          description: Success
+          schema:
+            required:
+              - status
+            properties:
+              status:
+                type: string
+                description: control request status
+                enum:
+                  - accepted
+                  - ignored
+                  - not_supported
+                  - expired
+                  - error
+                  - completed
+              command:
+                $ref: "#/definitions/LifecycleCommand"
+              state:
+                $ref: "#/definitions/LifecycleState"
+    get:
+      summary: Current service lifecycle control command
+      description: Return the current lifecycle control command for the service
+      operationId: commandInfo
+      tags:
+        - required_api
+        - lifecycle
+      responses:
+        200:
+          description: current lifecycle command
+          schema:
+            $ref: "#/definitions/LifecycleCommand"
+  /lifecycle/state:
+    x-swagger-router-controller: lifecycle
+    get:
+      summary: Current service lifecycle state
+      description: Return the current operational state for the service
+      operationId: stateInfo
+      tags:
+        - required_api
+        - lifecycle
+      responses:
+        200:
+          description: current lifecycle state
+          schema:
+            $ref: "#/definitions/LifecycleState"
+  /lifecycle/activity:
+    x-swagger-router-controller: lifecycle
+    get:
+      summary: Current service work stats
+      description: Returns the number of active tasks and API requests. This endpoints shows the current service workload or if the service is idle.
+      operationId: activityStats
+      tags:
+        - required_api
+        - lifecycle
+        - activity
+      responses:
+        200:
+          description: Success
+          schema:
+            properties:
+              tasks:
+                type: integer
+                format: int64
+                minimum: 0
+                default: 0
+                description: number of active tasks
+              ingress_requests:
+                type: integer
+                format: int64
+                minimum: 0
+                default: 0
+                description: number of active ingress requests
+              egress_requests:
+                type: integer
+                format: int64
+                minimum: 0
+                default: 0
+                description: number of active egress requests
+  /health/status/live:
+    x-swagger-router-controller: status
+    get:
+      summary: Service liveness
+      description: The endpoint to determine if the service should be restarted.
+      operationId: serviceIsLive
+      tags:
+        - required_api
+        - health
+      responses:
+        200:
+          description: Service is ok.
+          schema:
+            properties:
+              status:
+                type: string
+                description: optional status ID
+                enum:
+                  - live
+        500:
+          description: A 500 error or a connection error indicates that the service needs to be restarted.
+          schema:
+            properties:
+              status:
+                type: string
+                description: optional status ID
+  /health/status/ready:
+    x-swagger-router-controller: status
+    get:
+      summary: Service readiness
+      description: The endpoint to determine if the service is ready to be used. The purpose of this endpoint is to indicate if the service is usable and it can be activated by the routing infrastructure. Note that it's not meant to communicate the status details and the actual health check state (including errors). The endpoint returns the readiness status based on the most recent health check execution.
+      operationId: serviceIsReady
+      tags:
+        - required_api
+        - health
+      parameters:
+        - name: wait
+          in: query
+          description: Number of seconds to wait for for the health checks execution to complete (no value or 0 means async execution)
+          type: integer
+          format: int32
+          minimum: 0
+          default: 30
+          allowEmptyValue: true
+      responses:
+        200:
+          description: Success
+          schema:
+            properties:
+              status:
+                type: string
+                description: optional status ID
+                enum:
+                  - ready
+                  - unknown
+                  - pending
+                  - failed
+        500:
+          description: Failure
+          schema:
+            properties:
+              status:
+                type: string
+                description: optional status ID
+  /health/checks:
+    x-swagger-router-controller: checks
+    get:
+      summary: Health check list
+      description: Returns the list of all available/selected health checks in the service
+      operationId: healthChecks
+      tags:
+        - highly_recommended_api
+        - health
+      parameters:
+        - $ref: "#/parameters/healthCheckTags"
+        - $ref: "#/parameters/healthCheckClassifications"
+        - $ref: "#/parameters/healthCheckIDs"
+        - $ref: "#/parameters/healthCheckPath"
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/HealthCheck"
+    post:
+      consumes:
+        - application/octet-stream
+        - application/json
+      summary: Execute all/selected health checks
+      description: Executes the selected health checks in the service (all by default)
+      operationId: healthChecksRun
+      tags:
+        - highly_recommended_api
+        - health
+      parameters:
+        - name: wait
+          in: query
+          description: Number of seconds to wait for for the health checks execution to complete (no value or 0 means async execution)
+          type: integer
+          format: int32
+          minimum: 0
+          default: 0
+          allowEmptyValue: true
+        - $ref: "#/parameters/healthCheckTags"
+        - $ref: "#/parameters/healthCheckClassifications"
+        - $ref: "#/parameters/healthCheckIDs"
+        - $ref: "#/parameters/healthCheckPath"
+        - name: param_overrides
+          in: body
+          description: Optional test parameter overrides
+          schema:
+            type: object
+            description: Map of explicit test parameter sets (ID -> param map)
+            additionalProperties:
+              type: object
+              additionalProperties: true
+      responses:
+        200:
+          description: Success
+          schema:
+            required:
+              - status
+            properties:
+              status:
+                type: string
+                description: health check execution request status
+                enum:
+                  - accepted
+                  - ignored
+                  - not_supported
+                  - error
+                  - completed
+              state:
+                $ref: "#/definitions/HealthCheckExecutionState"
+  /health/checks/state:
+    x-swagger-router-controller: checks
+    get:
+      summary: Health check state
+      description: Returns the current / most recent health check execution state.
+      operationId: healthChecksState
+      tags:
+        - highly_recommended_api
+        - health
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/HealthCheckExecutionState"
+  /info/uptime:
+    x-swagger-router-controller: info
+    get:
+      summary: Service uptime
+      description: Returns the service uptime information
+      operationId: serviceUptime
+      tags:
+        - recommended_api
+        - info
+      responses:
+        200:
+          description: Success
+          schema:
+            properties:
+              uptime:
+                type: integer
+                description: Unix timestamp
+                example: 1497483390
+              start_time:
+                type: string
+                format: date-time
+                description: the service startup time in UTC
+                example: 2017-06-13T16:06:06Z
+  /info/process:
+    x-swagger-router-controller: info
+    get:
+      summary: Process IDs
+      description: Returns the process IDs for the service
+      operationId: processIdInfo
+      tags:
+        - recommended_api
+        - info
+      responses:
+        200:
+          description: Success
+          schema:
+            required:
+              - id
+              - parent
+            properties:
+              id:
+                type: integer
+                format: int64
+                description: Process ID
+              parent:
+                type: integer
+                format: int64
+                description: Parent process ID
+              children:
+                type: array
+                description: Current child process IDs
+                items:
+                  type: integer
+                  format: int64
+  /info/process/memory:
+    x-swagger-router-controller: info
+    get:
+      summary: Process memory
+      description: Returns the process memory info
+      operationId: processMemInfo
+      tags:
+        - optional_api
+        - info
+      responses:
+        200:
+          description: Success
+          schema:
+            properties:
+              rss:
+                type: integer
+                format: int64
+              vsz:
+                type: integer
+                format: int64
+              runtime:
+                type: object
+                description: Runtime-specific memory information
+                additionalProperties: true
+            required:
+              - rss
+  /info/env/os:
+    x-swagger-router-controller: info
+    get:
+      summary: OS environment variables
+      description: Returns the OS environment variables for the service
+      operationId: osEnvInfo
+      tags:
+        - recommended_api
+        - info
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            description: A set of system environment variable names and values available to the service
+            additionalProperties: true
+  /info/env/cloud:
+    x-swagger-router-controller: info
+    get:
+      summary: Cloud environment variables
+      description: Returns the cloud environment variables
+      operationId: cloudEnvInfo
+      tags:
+        - optional_api
+        - info
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            description: A set of cloud environment variable names and values (e.g., from AMI and EC2 instance tags)
+            additionalProperties: true
+  /info/runtime:
+    x-swagger-router-controller: info
+    get:
+      summary: Runtime info
+      description: Returns basic service runtime information
+      operationId: runtimeInfo
+      tags:
+        - recommended_api
+        - info
+      responses:
+        200:
+          description: Success
+          schema:
+            properties:
+              name:
+                type: string
+                enum:
+                  - none
+                  - beam
+                  - jvm
+                  - dotnet
+                  - node
+                  - cpython
+                  - pypy
+                  - other
+              version:
+                type: string
+              lang:
+                type: string
+                enum:
+                  - python
+                  - ruby
+                  - js
+                  - php
+                  - perl
+                  - erlang
+                  - elixir
+                  - node
+                  - csharp
+                  - fsharp
+                  - java
+                  - scala
+                  - clojure
+                  - groovy
+                  - kotlin
+                  - golang
+                  - c
+                  - cpp
+                  - rust
+                  - haskell
+                  - other
+              runtime:
+                type: object
+                description: Additional runtime-specific runtime information
+                additionalProperties: true
+            required:
+              - name
+              - version
+  /info/packages/dynamic:
+    x-swagger-router-controller: info
+    get:
+      summary: Loaded dynamic packages
+      description: Returns dynamic/external libraries used by the service
+      operationId: dynamicPackageInfo
+      tags:
+        - optional_api
+        - info
+      responses:
+        200:
+          description: Success.
+          schema:
+            type: array
+            items:
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                version:
+                  type: string
+                path:
+                  type: string
+                hash:
+                  type: string
+                hash_type:
+                  type: string
+                license:
+                  type: string
+  /info/packages/static:
+    x-swagger-router-controller: info
+    get:
+      summary: Static packages
+      description: Returns static libraries used by the service
+      operationId: staticPackageInfo
+      tags:
+        - optional_api
+        - info
+      responses:
+        200:
+          description: Success.
+          schema:
+            type: array
+            items:
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                version:
+                  type: string
+                path:
+                  type: string
+                hash:
+                  type: string
+                hash_type:
+                  type: string
+                license:
+                  type: string
+  /info/connections:
+    x-swagger-router-controller: info
+    get:
+      summary: Current connections
+      description: Returns a list of current network connections (might require pagination)
+      operationId: connectionInfo
+      tags:
+        - optional_api
+        - info
+      responses:
+        200:
+          description: Success
+          schema:
+            properties:
+              ingress:
+                type: array
+                items:
+                  required:
+                    - ip
+                  properties:
+                    ip:
+                      type: string
+                    port:
+                      type: integer
+                    protocol:
+                      type: string
+                      enum:
+                        - udp
+                        - tcp
+                    request:
+                      type: object
+                      description: Optional map of service-specific requests properties
+                      additionalProperties: true
+              egress:
+                type: array
+                items:
+                  required:
+                    - ip
+                  properties:
+                    ip:
+                      type: string
+                    port:
+                      type: integer
+                    protocol:
+                      type: string
+                      enum:
+                        - udp
+                        - tcp
+                    request:
+                      type: object
+                      description: Optional map of service-specific requests properties
+                      additionalProperties: true
+  /dependencies/external:
+    x-swagger-router-controller: dependencies
+    get:
+      summary: Used external 3rd party services
+      description: Returns a list of 3rd party cloud services used by this service
+      operationId: externalDependenciesInfo
+      tags:
+        - recommended_api
+        - dependencies
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                endpoints:
+                  type: array
+                  items:
+                    properties:
+                      domain:
+                        type: string
+                      port:
+                        type: integer
+                      ips:
+                        type: array
+                        items:
+                          type: string
+  /dependencies/services:
+    x-swagger-router-controller: dependencies
+    get:
+      summary: Used platform services
+      description: Returns a list of other platform services used by this service
+      operationId: serviceDependenciesInfo
+      tags:
+        - recommended_api
+        - dependencies
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              properties:
+                name:
+                  type: string
+  /dependencies/resources:
+    x-swagger-router-controller: dependencies
+    get:
+      summary: Used resources
+      description: Returns a list of platform Data Plane resources used by this service (databases, queues, etc)
+      operationId: resourceDependenciesInfo
+      tags:
+        - recommended_api
+        - dependencies
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                  enum:
+                    - postgresql
+                    - rabbitmq
+                    - redis
+                    - cassandra
+                    - elasticsearch
+                    - kafka
+                    - other
+                version:
+                  type: string
+                type:
+                  type: string
+                  enum:
+                    - data_store
+                    - message_queue
+                    - other
+                endpoints:
+                  type: array
+                  items:
+                    properties:
+                      host:
+                        type: string
+                        description: Domain name or IP
+                      port:
+                        type: integer
+  /logs/{key}/tail:
+    x-swagger-router-controller: logs
+    get:
+      produces:
+        - text/plain
+      summary: Current log data
+      description: Returns the current log data
+      operationId: logTail
+      tags:
+        - optional_api
+        - logs
+      parameters:
+        - $ref: "#/parameters/logKey"
+      responses:
+        200:
+          description: Success
+          schema:
+            type: string
+  /logs/{key}/last:
+    x-swagger-router-controller: logs
+    get:
+      produces:
+        - text/plain
+        - application/octet-stream
+      summary: Last log records
+      description: Returns the last X number of log records (100 by default)
+      operationId: logLast
+      tags:
+        - optional_api
+        - logs
+      parameters:
+        - $ref: "#/parameters/logKey"
+        - name: records
+          in: query
+          description: the number of log records to return
+          type: integer
+          minimum: 1
+          default: 100
+      responses:
+        200:
+          description: Success
+          schema:
+            type: string
+  /logs/{key}/file:
+    x-swagger-router-controller: logs
+    get:
+      summary: Log file info
+      description: Returns the log file info for the key
+      operationId: logFile
+      tags:
+        - optional_api
+        - logs
+      parameters:
+        - $ref: "#/parameters/logKey"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/LogFile"
+        404:
+          description: Unknown log key
+          schema:
+            type: object
+  /logs/{key}/config:
+    x-swagger-router-controller: logs
+    get:
+      summary: Log config
+      description: Returns the runtime log config for the selected log key.
+      operationId: logConfig
+      tags:
+        - optional_api
+        - logs
+      parameters:
+        - $ref: "#/parameters/logKey"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/LogConfig"
+        404:
+          description: Unknown log key
+          schema:
+            type: object
+    put:
+      consumes:
+        - application/octet-stream
+        - application/json
+      summary: Update log config
+      description: Updates the runtime log config for the selected log key
+      operationId: logConfigUpdate
+      tags:
+        - optional_api
+        - logs
+      parameters:
+        - $ref: "#/parameters/logKey"
+        - in: query
+          required: true
+          name: enabled
+          type: boolean
+        - in: query
+          required: false
+          name: level
+          type: string
+          enum:
+            - unknown
+            - none
+            - trace
+            - debug
+            - info
+            - warn
+            - error
+            - fatal
+            - other
+          default: error
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/LogConfig"
+        404:
+          description: Unknown log key
+          schema:
+            type: object
+  /logs:
+    x-swagger-router-controller: logs
+    get:
+      summary: List all log info
+      description: Returns all available log keys and the associated log files
+      operationId: logList
+      tags:
+        - optional_api
+        - logs
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            description: Map of log keys and the associated log file info
+            additionalProperties:
+              $ref: "#/definitions/LogFile"
+  /config:
+    x-swagger-router-controller: config
+    get:
+      summary: Current service config
+      description: Returns the currently active service config data (no secrets). Includes the configuration data from all sources.
+      operationId: configInfo
+      tags:
+        - recommended_api
+        - config
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+  /config/sources:
+    x-swagger-router-controller: config
+    get:
+      summary: Config sources
+      description: Returns the config data sources
+      operationId: configSourceList
+      tags:
+        - optional_api
+        - config
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            description: Map of source keys and the associated config source info
+            additionalProperties:
+              $ref: "#/definitions/DataSource"
+  /config/sources/{key}:
+    x-swagger-router-controller: config
+    get:
+      summary: Config source info
+      description: Returns the config source info for the selected source key
+      operationId: configSource
+      tags:
+        - optional_api
+        - config
+      parameters:
+        - $ref: "#/parameters/sourceKey"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/DataSource"
+        404:
+          description: Unknown source key
+          schema:
+            type: object
+  /config/sources/{key}/data:
+    x-swagger-router-controller: config
+    get:
+      produces:
+        - text/plain
+        - application/json
+        - application/octet-stream
+      summary: Raw config source data
+      description: Returns raw config source data for the selected source key
+      operationId: configSourceData
+      tags:
+        - optional_api
+        - config
+      parameters:
+        - $ref: "#/parameters/sourceKey"
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+        404:
+          description: Unknown source key
+          schema:
+            type: object
+  /config/versions:
+    x-swagger-router-controller: config
+    get:
+      summary: Config versions
+      description: Returns the available config versions
+      operationId: configVersionList
+      tags:
+        - optional_api
+        - config
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/ConfigVersion"
+  /config/versions/{id}:
+    x-swagger-router-controller: config
+    get:
+      summary: Config version info
+      description: Returns the config version info for the selected version ID
+      operationId: configVersion
+      tags:
+        - optional_api
+        - config
+      parameters:
+        - $ref: "#/parameters/configVersionId"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/ConfigVersion"
+        404:
+          description: Unknown version ID
+          schema:
+            type: object
+  /config/version:
+    x-swagger-router-controller: config
+    get:
+      summary: Current config version info
+      description: Returns the current config version info
+      operationId: currentConfigVersion
+      tags:
+        - optional_api
+        - config
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/ConfigVersion"
+  /config/versions/{id}/data:
+    x-swagger-router-controller: config
+    get:
+      summary: Config data
+      description: Returns config data for the selected version ID
+      operationId: configVersionData
+      tags:
+        - optional_api
+        - config
+      parameters:
+        - $ref: "#/parameters/configVersionId"
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+        404:
+          description: Unknown version ID
+          schema:
+            type: object
+  /secrets:
+    x-swagger-router-controller: secrets
+    get:
+      summary: Current service secret metadata
+      description: Returns the metadata for the current service secrets (no values)
+      operationId: secretsInfo
+      tags:
+        - optional_api
+        - secrets
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/DataSource"
+  /metrics:
+    x-swagger-router-controller: metrics
+    get:
+      summary: Metrics endpoint info
+      description: Returns the base path for the metrics endpoints (path and port)
+      operationId: metricsInfo
+      tags:
+        - recommended_api
+        - metrics
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/Metrics"
+  /debug/trace:
+    x-swagger-router-controller: trace
+    get:
+      summary: Trace configurations
+      description: Returns the current trace configurations
+      operationId: traceInfo
+      tags:
+        - future_api
+        - trace
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+    put:
+      summary: Update trace configurations
+      description: Updates all trace configurations
+      operationId: traceUpdate
+      tags:
+        - future_api
+        - trace
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+  /debug/trace/tasks:
+    x-swagger-router-controller: trace
+    get:
+      summary: List tasks
+      description: Returns the last set of tasks executed by the service
+      operationId: tasksList
+      tags:
+        - future_api
+        - trace
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+  /debug/trace/api/request/in:
+    x-swagger-router-controller: trace
+    get:
+      summary: List ingress API calls
+      description: Returns the last set of ingress requests
+      operationId: inRequestList
+      tags:
+        - future_api
+        - trace
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+  /debug/trace/api/request/out:
+    x-swagger-router-controller: trace
+    get:
+      summary: List egress API calls
+      description: Returns the last set of egress requests
+      operationId: outRequestList
+      tags:
+        - future_api
+        - trace
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+  /debug/trace/resource/{name}/calls:
+    x-swagger-router-controller: trace
+    get:
+      summary: List resources calls
+      description: Returns the last set of resource calls
+      operationId: resourceCallList
+      tags:
+        - future_api
+        - trace
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: Resource name
+          type: string
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+  /debug/trace/events:
+    x-swagger-router-controller: trace
+    get:
+      summary: List trace events
+      description: Returns the last set of trace events generated by the services
+      operationId: eventList
+      tags:
+        - future_api
+        - trace
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+
+definitions:
+  Service:
+    title: Service
+    description: Service information
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: Service name
+        example: service.x
+      type:
+        type: string
+        description: Service type (could be subsystem specific)
+        example: http.service
+      subsystem:
+        type: string
+        description: Subsystem name
+        example: subsystem.a
+      capabilities:
+        type: array
+        description: High level service capabilities
+        items:
+          type: string
+          enum:
+            - api
+            - tasks
+            - resources
+            - service_calls
+            - external_calls
+          description: Service capability >
+            * api - service has an API
+            * tasks - service executes async tasks
+            * resources - service has one or many Data Plane resources
+            * service_calls - service makes calls to other system services
+            * external_calls - service makes calls to external 3rd party cloud services
+      is_proxy:
+        type: boolean
+        description: Returns true if the Service Management API is hosted by a separate service that acts as a proxy for the actual service instances behind it. Proxies are necessary for services with ephemeral instances. Proxies might pull some of the information they expose from the target service instances while other information might be pushed by the service instances to their proxy service.
+        default: false
+  ApiVersion:
+    title: ApiVersion
+    description: API information for the Business/Service Domain API
+    required:
+      - version
+      - path
+    properties:
+      version:
+        type: string
+        description: Version string (<major number>.<minor number>)
+        example: 1.0
+      date:
+        type: string
+        format: date
+        example: 2017-06-13
+      path:
+        type: string
+        description: base path for the API (can also be used for Business/Service Domain API discovery and auto-registration)
+      spec:
+        type: string
+        description: Open API (Swagger) spec endpoint for the Business/Service Domain API
+      http_port:
+        type: integer
+      https_port:
+        type: integer
+    example:
+      version: 1.1
+      path: /api/1.0
+      date: 2017-06-15
+  BuildVersion:
+    title: BuildVersion
+    description: Build version information
+    required:
+      - time
+    properties:
+      id:
+        type: string
+        description: build system specific ID generated during build (optional)
+        example: 43a4c58074794fb9bcd3623e742a4b17
+      time:
+        type: string
+        format: date-time
+        description: build time
+        example: 2017-06-13T16:06:06Z
+      commit:
+        type: string
+        description: git commit hash string
+        example: c7fdea8821a7d6c5b1d0065f99ab465a75d68bc6
+      tag:
+        type: string
+        description: git tag or branch name
+  LifecycleCommand:
+    title: LifecycleCommand
+    description: Lifecycle control command information
+    required:
+      - action
+    properties:
+      action:
+        type: string
+        enum:
+          - shutdown
+          - terminate
+          - restart
+          - pause
+          - resume
+          - reload.config
+          - revert.config
+          - drain.all
+          - drain.tasks
+          - drain.requests
+          - none
+        description: Service lifecycle action >
+          * shutdown - (required) graceful service termination (drain work and exit)
+          * terminate - (required) exit immediately (without draining any work)
+          * restart - restart service asap
+          * pause - stop accepting new work and suspend WIP
+          * resume - resume WIP and start accepting new work (can use resume after drain or pause commands)
+          * reload.config - (required) reload service configuration
+          * revert.config - roll back to previous configuration
+          * drain.all - (recommended) stop accepting new work and drain all active tasks and requests
+          * drain.tasks - stop accepting new tasks and drain all active tasks
+          * drain.requests - stop accepting new requests and drain all active ingress requests
+          * none - no command
+      status:
+        type: string
+        enum:
+          - unknown
+          - pending
+          - executing
+          - expired
+          - canceled
+          - error
+          - completed
+        description: command status
+      id:
+        type: string
+        description: current command ID
+      progress:
+        type: integer
+        format: int64
+        minimum: 0
+        default: 0
+        description: progress indicator
+      accept_time:
+        type: string
+        format: date-time
+        description: when this action was accepted for processing
+        example: 2017-06-13T16:06:06Z
+      start_time:
+        type: string
+        format: date-time
+        description: action execution start time
+        example: 2017-06-13T16:06:06Z
+      current_time:
+        type: string
+        format: date-time
+        description: current time
+        example: 2017-06-13T16:06:06Z
+      start_expire:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+        description: The maximum number of seconds before the submitted action expires (allowed wait time before command starts executing)
+      exec_deadline:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+        description: The maximum number of seconds the action is allowed to execute.
+  LifecycleState:
+    title: LifecycleState
+    description: Lifecycle state information
+    required:
+      - current
+    properties:
+      update_count:
+        type: integer
+        format: int64
+        minimum: 0
+        default: 0
+        description: number of lifecycle state updates
+      update_time:
+        type: string
+        format: date-time
+        description: last lifecycle state update time
+        example: 2017-06-13T16:06:06Z
+      current:
+        type: string
+        description: current service lifecycle state
+        enum:
+          - unknown
+          - initializing
+          - terminating
+          - idle
+          - active
+          - failed
+          - pausing
+          - paused
+          - resuming
+          - reloading.config
+          - reverting.config
+          - draining.all
+          - draining.tasks
+          - draining.requests
+          - inactive
+      previous:
+        type: string
+        description: previous service lifecycle state
+        enum:
+          - unknown
+          - initializing
+          - terminating
+          - idle
+          - active
+          - failed
+          - pausing
+          - paused
+          - resuming
+          - reloading.config
+          - reverting.config
+          - draining.all
+          - draining.tasks
+          - draining.requests
+          - inactive
+      current_action:
+        type: string
+        enum:
+          - shutdown
+          - terminate
+          - restart
+          - pause
+          - resume
+          - reload.config
+          - revert.config
+          - drain.all
+          - drain.tasks
+          - drain.requests
+          - none
+        description: Pending lifecycle action >
+          * shutdown - graceful service termination (drain work and exit)
+          * terminate - exit immediately (without draining any work)
+          * restart - restart service asap
+          * pause - stop accepting new work and suspend WIP
+          * resume - resume WIP and start accepting new work
+          * reload.config - reload service configuration
+          * revert.config - roll back to previous configuration
+          * drain.all - drain all work
+          * drain.tasks - drain tasks only
+          * drain.requests - drain ingress requests
+          * none - no command
+  HealthCheck:
+    title: HealthCheck
+    description: Health check test information
+    required:
+      - id
+    properties:
+      id:
+        type: string
+        description: Unique ID
+      enabled:
+        type: boolean
+        description: Is this check enabled?
+        default: true
+      description:
+        type: string
+        description: Optional test description
+      path:
+        type: string
+        description: Optional test path (used to define test hierarchy and to select tests using exact or prefix matching)
+      tags:
+        type: array
+        description: Optional set of tags (used to select tests)
+        items:
+          type: string
+      classifications:
+        type: array
+        description: Optional set of classifications (used to select tests)
+        items:
+          type: string
+      parameters:
+        type: object
+        description: Optional map of default parameters for the test
+        additionalProperties: true
+      schema:
+        type: object
+        description: Optional JSON schema for the test parameters
+        additionalProperties: true
+  HealthCheckExecutionState:
+    title: HealthCheckExecutionState
+    description: Health check execution information
+    required:
+      - id
+      - state
+    properties:
+      state:
+        type: string
+        description: health check execution state
+        enum:
+          - unknown
+          - failed
+          - pending
+          - finished
+      id:
+        type: string
+        description: current execution ID
+      start_time:
+        type: string
+        format: date-time
+        description: Start time for the latest execution
+        example: 2017-06-13T16:06:06Z
+      current_time:
+        type: string
+        format: date-time
+        description: Current time for the latest execution
+        example: 2017-06-13T16:06:06Z
+      end_time:
+        type: string
+        format: date-time
+        description: End time for the latest execution
+        example: 2017-06-13T16:06:06Z
+      total_checks:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+        description: total number of health check tests
+      selected_checks:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+        description: the number of selected health check tests to execute
+      executed_checks:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+        description: the total number of selected health check tests done executing
+      failed_checks:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+        description: the number of selected health check tests with failures
+  LogConfig:
+    title: LogConfig
+    description: Runtime log settings
+    required:
+      - enabled
+    properties:
+      enabled:
+        type: boolean
+        description: Is this log enabled?
+        default: true
+      level:
+        type: string
+        description: Logging level
+        default: error
+        enum:
+          - unknown
+          - none
+          - trace
+          - debug
+          - info
+          - warn
+          - error
+          - fatal
+          - other
+      update_time:
+        type: string
+        format: date-time
+        description: last runtime log settings update time (with milliseconds if possible)
+        example: 2017-06-13T16:06:06.123Z
+  LogFile:
+    title: LogFile
+    description: Log file information
+    required:
+      - key
+      - path
+    properties:
+      key:
+        type: string
+      path:
+        type: string
+      format:
+        type: string
+        enum:
+          - json
+          - protobuf
+          - avro
+          - other
+        default: json
+        description: Log file format type >
+            * json - new line delimited JSON (text)
+            * protobuf - Protocol Buffers (binary)
+            * avro - AVRO (binary or text)
+            * other - other 
+      size:
+        type: integer
+        format: int64
+        minimum: 0
+        default: 0
+      create_time:
+        type: string
+        format: date-time
+        description: log file creation time (with milliseconds if possible)
+        example: 2017-06-13T16:06:06.123Z
+      update_time:
+        type: string
+        format: date-time
+        description: log file update time (with milliseconds if possible)
+        example: 2017-06-13T16:06:06.123Z
+      schema:
+        type: object
+        description: Optional JSON schema for the log file
+        additionalProperties: true
+  DataSource:
+    title: DataSource
+    description: Data source info
+    required:
+      - key
+    properties:
+      key:
+        type: string
+      update_time:
+        type: string
+        format: date-time
+        description: data source update time (with milliseconds if possible)
+        example: 2017-06-13T16:06:06.123Z
+      hash:
+        type: string
+        description: SHA256 hex string (lowercase)
+      type:
+        type: string
+        description: data source type
+        enum:
+          - unknown
+          - embedded
+          - external
+          - file
+          - env
+          - args
+          - other
+      location:
+        type: string
+        description: data source location
+      format:
+        type: string
+        description: data format
+        enum:
+          - unknown
+          - json
+          - json5
+          - hjson
+          - yaml
+          - toml
+          - hcl
+          - properties
+          - xml
+          - http_generic
+          - etcd
+          - consul
+          - vault
+          - other
+  ConfigVersion:
+    title: ConfigVersion
+    description: Config version info
+    required:
+      - id
+      - time
+    properties:
+      id:
+        type: integer
+        format: int64
+        minimum: 0
+        default: 0
+        description: numeric version ID (increasing)
+      time:
+        type: string
+        format: date-time
+        example: 2017-06-13T16:06:06.123Z
+        description: config version creation time (with milliseconds if possible)
+      hash:
+        type: string
+        description: SHA256 hex string (lowercase) of the config data
+      is_stored:
+        type: boolean
+        description: true if this config version is persisted
+        default: false
+      location:
+        type: string
+        description: URL where this config version is stored (local or remote)
+  Metrics:
+    title: Metrics
+    description: Metrics endpoint information
+    required:
+      - path
+      - port
+    properties:
+      type:
+        type: string
+        description: Metrics type
+        enum:
+          - json
+          - prometheus
+          - other
+      path:
+        type: string
+        description: base path for the metrics API endpoint
+      port:
+        type: integer
+      is_secure:
+        type: boolean
+        description: true if it is a TLS endpoint
+        default: false
+    example:
+      type: prometheus
+      path: /metrics
+      port: 14001
+parameters:
+  logKey:
+    name: key
+    in: path
+    required: true
+    description: Log file key (must be one of the logs exposed through configs and returned by the log list endpoint)
+    type: string
+  sourceKey:
+    name: key
+    in: path
+    required: true
+    description: Data source key (returned by the config source list endpoint)
+    type: string
+  configVersionId:
+    name: id
+    in: path
+    required: true
+    description: Config version ID (returned by the config version list endpoint)
+    type: integer
+    format: int64
+    minimum: 0
+    default: 0
+  healthCheckTags:
+    name: tag
+    in: query
+    description: Tags associated with the tests to select. Tag-based test selection must be supported by all implementations.
+    type: array
+    uniqueItems: true
+    minItems: 0
+    collectionFormat: multi
+    items:
+      type: string
+  healthCheckClassifications:
+    name: classification
+    in: query
+    description: Classifications associated with the tests to select
+    type: array
+    uniqueItems: true
+    minItems: 0
+    collectionFormat: multi
+    items:
+      type: string
+  healthCheckIDs:
+    name: id
+    in: query
+    description: one or few IDs for the tests to select
+    type: array
+    uniqueItems: true
+    minItems: 0
+    collectionFormat: multi
+    items:
+      type: string
+  healthCheckPath:
+    name: path
+    in: query
+    description: Path-based test selector (exact or prefix wildcard match)
+    type: string
+

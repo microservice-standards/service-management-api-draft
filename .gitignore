@@ -1,0 +1,14 @@
+.DS_Store
+.idea
+logs
+*.log
+pids
+*.pid
+*.seed
+lib-cov
+coverage
+.grunt
+.lock-wscript
+draft/build/Release
+draft/node_modules
+draft/config/runtime.yaml

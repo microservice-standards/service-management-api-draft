@@ -1,0 +1,89 @@
+
+REQUIRED:
+
+curl http://127.0.0.1:1111/.service/spec
+
+curl http://127.0.0.1:1111/.service/info | python -mjson.tool
+
+curl http://127.0.0.1:1111/.service/info/version/build | python -mjson.tool
+
+curl 'http://127.0.0.1:1111/.service/health/status/live' | python -mjson.tool
+curl 'http://127.0.0.1:1111/.service/health/status/ready' | python -mjson.tool
+
+curl 'http://127.0.0.1:1111/.service/lifecycle/state' | python -mjson.tool
+curl 'http://127.0.0.1:1111/.service/lifecycle/activity' | python -mjson.tool
+
+curl -X POST 'http://127.0.0.1:1111/.service/lifecycle/control?action=shutdown' | python -mjson.tool
+curl -X POST 'http://127.0.0.1:1111/.service/lifecycle/control?action=shutdown&return_state' | python -mjson.tool
+curl 'http://127.0.0.1:1111/.service/lifecycle/control' | python -mjson.tool
+
+HIGHLY RECOMMENDED:
+
+curl http://127.0.0.1:1111/.service/health/checks | python -mjson.tool
+curl 'http://127.0.0.1:1111/.service/health/checks?path=/some/*' | python -mjson.tool
+curl 'http://127.0.0.1:1111/.service/health/checks?path=/some/*&tag=one&tag=two' | python -mjson.tool
+curl 'http://127.0.0.1:1111/.service/health/checks?tag=one&tag=two' | python -mjson.tool
+
+curl -X POST http://127.0.0.1:1111/.service/health/checks | python -mjson.tool
+curl -X POST http://127.0.0.1:1111/.service/health/checks -H 'Content-Type:application/json' -d '{"b8e10e6e4561442aa1dfbefc2becd179":{"two": 33}}' | python -mjson.tool
+
+curl http://127.0.0.1:1111/.service/health/checks/state | python -mjson.tool
+
+
+RECOMMENDED:
+
+curl http://127.0.0.1:1111/.service/spec/implemented | python -mjson.tool
+
+curl http://127.0.0.1:1111/.service/info/version/api | python -mjson.tool
+curl http://127.0.0.1:1111/.service/info/version/api/all | python -mjson.tool
+
+curl -X POST 'http://127.0.0.1:1111/.service/lifecycle/control?action=reload.config&wait' | python -mjson.tool
+
+curl http://127.0.0.1:1111/.service/info/uptime | python -mjson.tool
+curl http://127.0.0.1:1111/.service/info/process | python -mjson.tool
+curl http://127.0.0.1:1111/.service/info/env/os | python -mjson.tool
+curl http://127.0.0.1:1111/.service/info/runtime | python -mjson.tool
+
+curl http://127.0.0.1:1111/.service/dependencies/external | python -mjson.tool
+curl http://127.0.0.1:1111/.service/dependencies/services | python -mjson.tool
+curl http://127.0.0.1:1111/.service/dependencies/resources | python -mjson.tool
+
+curl http://127.0.0.1:1111/.service/config | python -mjson.tool
+
+curl http://127.0.0.1:1111/.service/metrics | python -mjson.tool
+
+
+OPTIONAL:
+
+curl http://127.0.0.1:1111/.service/config/sources | python -mjson.tool
+curl http://127.0.0.1:1111/.service/config/sources/file_two | python -mjson.tool
+curl http://127.0.0.1:1111/.service/config/sources/file_two/data | python -mjson.tool
+curl http://127.0.0.1:1111/.service/config/versions | python -mjson.tool
+curl http://127.0.0.1:1111/.service/config/versions/0 | python -mjson.tool
+curl http://127.0.0.1:1111/.service/config/versions/0/data | python -mjson.tool
+curl http://127.0.0.1:1111/.service/config/version | python -mjson.tool
+
+curl http://127.0.0.1:1111/.service/secrets | python -mjson.tool
+
+curl http://127.0.0.1:1111/.service/logs | python -mjson.tool
+curl http://127.0.0.1:1111/.service/logs/event_log/file | python -mjson.tool
+curl http://127.0.0.1:1111/.service/logs/event_log/last?count=10
+curl http://127.0.0.1:1111/.service/logs/event_log/tail
+curl http://127.0.0.1:1111/.service/logs/event_log/config | python -mjson.tool
+curl -X PUT 'http://127.0.0.1:1111/.service/logs/event_log/config?enabled=true&level=warn' | python -mjson.tool
+
+curl http://127.0.0.1:1111/.service/info/packages/dynamic | python -mjson.tool
+curl http://127.0.0.1:1111/.service/info/packages/static | python -mjson.tool
+curl http://127.0.0.1:1111/.service/info/connections | python -mjson.tool
+curl http://127.0.0.1:1111/.service/info/env/cloud | python -mjson.tool
+curl http://127.0.0.1:1111/.service/info/process/memory | python -mjson.tool
+
+
+
+
+
+
+
+
+
+
