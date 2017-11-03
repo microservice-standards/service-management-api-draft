@@ -16,7 +16,9 @@ You can validate your OpenAPI/Swagger spec with Prism by running the `validate.c
 
 # API DRAFT
 
-API spec location: `draft/api/swagger/swagger.yaml`.
+API spec location: `draft/api/swagger/swagger.yaml`
+
+API mock location: `draft/api/mocks`
 
 You can find sample curl-based API calls in `api_call_examples.json`. The Swagger UI API Console also provides curl-based call examples.
 
