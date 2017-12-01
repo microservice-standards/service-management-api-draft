@@ -7,6 +7,7 @@ module.exports = {
   submitCommand: submitCommand,
   commandInfo: commandInfo,
   stateInfo: stateInfo,
+  stateLog: stateLog,
   activityStats: activityStats
 };
 
@@ -20,6 +21,12 @@ function submitCommand(req, res)
   var force = req.swagger.params.force.value;
   var returnState = req.swagger.params.return_state.value;
 
+  //note: need a default for empty values in the swagger lib
+  if(common.isEmptyValue(wait)) 
+  {
+    wait = true;
+  }
+  
   //note: need a default for empty values in the swagger lib
   if(common.isEmptyValue(force)) 
   {
@@ -49,6 +56,12 @@ function submitCommand(req, res)
     }
   };
 
+  if(wait)
+  {
+    out.status = "completed";
+    out.command.status = "completed";
+  }
+
   if(returnState)
   {
     out.state =
@@ -68,9 +81,11 @@ function commandInfo(req, res)
   {
     id: "427d1e6e4561442aa1dfcebc2beaf159",
     action: "drain.all",
-    status: "accepted",
-    progress: 0,
+    status: "executing",
+    progress: 35,
     accept_time: "2017-06-13T16:06:06Z",
+    start_time: "2017-06-13T16:07:08Z",
+    current_time: "2017-06-13T16:08:11Z",
     start_expire: 120,
     exec_deadline: 600
   };
@@ -91,6 +106,40 @@ function stateInfo(req, res)
     current: "active",
     previous: "reloading.config"
   };
+
+  res.json(out);
+}
+
+function stateLog(req, res) 
+{
+  var out =
+  [
+    {
+      update_count: 4,
+      update_time: "2017-07-13T16:08:05Z",
+      current: "active",
+      previous: "reloading.config"
+    },
+    {
+      update_count: 3,
+      update_time: "2017-07-13T16:07:04Z",
+      current: "reloading.config",
+      previous: "active"
+    },
+    {
+      update_count: 2,
+      update_time: "2017-07-13T16:05:02Z",
+      current: "active",
+      previous: "initializing"
+    },
+    {
+      update_count: 1,
+      update_time: "2017-07-13T16:02:01Z",
+      current: "initializing",
+      previous: "unknown"
+    }
+  ]
+  ;
 
   res.json(out);
 }

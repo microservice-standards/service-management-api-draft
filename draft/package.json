@@ -9,7 +9,8 @@
   "main": "app.js",
   "dependencies": {
     "hapi": "^10.0.0",
-    "swagger-hapi": "^0.1.0"
+    "swagger-hapi": "^0.1.0",
+    "lodash": "*"
   },
   "devDependencies": {
     "should": "^7.1.0",

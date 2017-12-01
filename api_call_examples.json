@@ -19,15 +19,16 @@ curl 'http://127.0.0.1:1111/.service/lifecycle/control' | python -mjson.tool
 
 HIGHLY RECOMMENDED:
 
-curl http://127.0.0.1:1111/.service/health/checks | python -mjson.tool
-curl 'http://127.0.0.1:1111/.service/health/checks?path=/some/*' | python -mjson.tool
-curl 'http://127.0.0.1:1111/.service/health/checks?path=/some/*&tag=one&tag=two' | python -mjson.tool
-curl 'http://127.0.0.1:1111/.service/health/checks?tag=one&tag=two' | python -mjson.tool
+curl http://127.0.0.1:1111/.service/health/tests | python -mjson.tool
+curl 'http://127.0.0.1:1111/.service/health/tests?path=/some/*' | python -mjson.tool
+curl 'http://127.0.0.1:1111/.service/health/tests?path=/some/*&tag=tag_one&tag=tag_two' | python -mjson.tool
+curl 'http://127.0.0.1:1111/.service/health/tests?tag=tag_one&tag=tag_two' | python -mjson.tool
+curl 'http://127.0.0.1:1111/.service/health/tests?tag=tag_three' | python -mjson.tool
 
-curl -X POST http://127.0.0.1:1111/.service/health/checks | python -mjson.tool
-curl -X POST http://127.0.0.1:1111/.service/health/checks -H 'Content-Type:application/json' -d '{"b8e10e6e4561442aa1dfbefc2becd179":{"two": 33}}' | python -mjson.tool
+curl -X POST http://127.0.0.1:1111/.service/health/tests | python -mjson.tool
+curl -X POST http://127.0.0.1:1111/.service/health/tests -H 'Content-Type:application/json' -d '{"e00530fa9b82472499ebc7e5a6078f0e":[{"name":"two","value":33}]}' | python -mjson.tool
 
-curl http://127.0.0.1:1111/.service/health/checks/state | python -mjson.tool
+curl http://127.0.0.1:1111/.service/health/tests/state | python -mjson.tool
 
 
 RECOMMENDED:
@@ -44,8 +45,8 @@ curl http://127.0.0.1:1111/.service/info/process | python -mjson.tool
 curl http://127.0.0.1:1111/.service/info/env/os | python -mjson.tool
 curl http://127.0.0.1:1111/.service/info/runtime | python -mjson.tool
 
-curl http://127.0.0.1:1111/.service/dependencies/external | python -mjson.tool
-curl http://127.0.0.1:1111/.service/dependencies/services | python -mjson.tool
+curl http://127.0.0.1:1111/.service/dependencies/services/external | python -mjson.tool
+curl http://127.0.0.1:1111/.service/dependencies/services/internal | python -mjson.tool
 curl http://127.0.0.1:1111/.service/dependencies/resources | python -mjson.tool
 
 curl http://127.0.0.1:1111/.service/config | python -mjson.tool
@@ -54,6 +55,8 @@ curl http://127.0.0.1:1111/.service/metrics | python -mjson.tool
 
 
 OPTIONAL:
+
+curl 'http://127.0.0.1:1111/.service/lifecycle/state/log' | python -mjson.tool
 
 curl http://127.0.0.1:1111/.service/config/sources | python -mjson.tool
 curl http://127.0.0.1:1111/.service/config/sources/file_two | python -mjson.tool
