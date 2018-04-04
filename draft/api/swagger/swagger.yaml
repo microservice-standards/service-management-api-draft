@@ -308,7 +308,7 @@ paths:
     x-swagger-router-controller: status
     get:
       summary: Service liveness
-      description: The endpoint to determine if the service should be restarted.
+      description: The endpoint to determine if the service should be restarted. You can use this endpoint for the liveness probe in Kubernetes.
       operationId: serviceIsLive
       tags:
         - required_api
@@ -334,7 +334,7 @@ paths:
     x-swagger-router-controller: status
     get:
       summary: Service readiness
-      description: The endpoint to determine if the service is ready to be used. The purpose of this endpoint is to indicate if the service is usable and it can be activated by the routing infrastructure. Note that it's not meant to communicate the status details and the actual health check state (including errors). The endpoint returns the readiness status based on the most recent health check execution.
+      description: The endpoint to determine if the service is ready to be used (after its initialization or later when it's back in the ready state). The purpose of this endpoint is to indicate if the service is usable and it can be activated or reactivated by the routing infrastructure. Note that it's not meant to communicate the status details and the actual health check state (including errors). The endpoint returns the readiness status based on the most recent health check execution. You can use this endpoint for the readiness probe in Kubernetes.
       operationId: serviceIsReady
       tags:
         - required_api
