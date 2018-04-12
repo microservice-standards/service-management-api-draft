@@ -1,4 +1,24 @@
-# OVERVIEW
+# WHY
+
+Imagine the future when you don't need to ssh to boxes to debug services or other system components. Imagine being able to quickly locate the part of your distributed system causing the problems. Imagine knowing exactly what you have in your distributed environment. Imagine knowing rightaway if your distributed system is vulnerable to the latest security vulnerabilities. Imagine releasing new software without downtimes. Imagine being able to scale down without having to worry about loosing data. Imagine software releases that are so easy and automated that even a new engineer can do on day one. Imagine the future where you can use 3rd party system components like lego blocks to build new systems and platforms.
+
+The Service Management API make that future possible.
+
+## Benefits
+
+* Visibility (into what we actually have deployed)
+* Observability (of what's going on with the deployed components)
+* Monitoring and alerting (based on what's going on with the components)
+* Debugging and troubleshooting
+* Testing and validation (of the deployment components in production)
+* Component lifecycle management (to enable better autoscaling behavior of the components, graceful workload completion, advanced deployment/release models, data/customer migrations)
+* Portability (service/component portability between different systems)
+
+# WHAT
+
+This is a life draft of the Service Management API.
+
+# HOW
 
 Before you start make sure you have Docker and Docker Compose installed.
 
