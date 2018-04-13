@@ -49,3 +49,19 @@ You can find sample curl-based API calls in `api_call_examples.json`. The Swagge
 * [Swagger UI](https://github.com/swagger-api/swagger-ui) - API Console for OpenAPI/Swagger.
 * [ReDoc](https://github.com/Rebilly/ReDoc) - Stripe-like static docs for OpenAPI/Swagger.
 * [Prims](https://github.com/stoplightio/prism) - OpenAPI/Swagger validation, mocking, etc.
+
+# REFERENCES AND SIMILAR CONCEPTS
+
+A number of concepts in the Service Management API are not new. The existing concepts have been expanded and augmented to maximize the value of the API and to make them usable in all (micro)services regardless of the stack used to implement them.
+
+* [healthz: Stop reverse engineering applications and start monitoring from the inside](https://vimeo.com/173610242) (Monitorama PDX 2016 - Kelsey Hightower)
+* [How Hootsuite Manages Its Growing Microservices Landscape](https://www.microservices.com/talks/hootsuite-manages-growing-microservices-landscape-adam-arsenault/)
+* Dropwizard admin (metrics, healthchecks, tasks)
+* Spring Boot Actuator
+
+
+
+
+
+
+
